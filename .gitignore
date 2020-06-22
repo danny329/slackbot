@@ -18,6 +18,7 @@ ngrok-stable-windows-amd64/
 .eggs/
 cv.pdf
 cv.PNG
+botsetting.txt
 lib/
 .idea/
 lib64/
