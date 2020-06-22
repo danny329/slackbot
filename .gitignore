@@ -13,8 +13,13 @@ develop-eggs/
 dist/
 downloads/
 eggs/
+env/
+ngrok-stable-windows-amd64/
 .eggs/
+cv.pdf
+cv.PNG
 lib/
+.idea/
 lib64/
 parts/
 sdist/
