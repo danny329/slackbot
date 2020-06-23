@@ -8,54 +8,30 @@ from slack.errors import SlackApiError
 app = Flask(__name__)
 
 blocks = '''[
-		{
-			"type": "section",
-			"text": {
-				"type": "plain_text",
-				"text": "Daniel want to send a interactive message\nselect one option",
-				"emoji": true
-			}
-		},
+		
 		{
 			"type": "actions",
+			"block_id": "trysection",
 			"elements": [
 				{
 					"type": "button",
 					"text": {
 						"type": "plain_text",
-						"text": "option 1",
+						"text": "Click Me1",
 						"emoji": true
 					},
-					"value": "click_me_1"
-				}
-			]
-		},
-		{
-			"type": "actions",
-			"elements": [
+					"value": "click_me_1",
+					"action_id": "click1"
+				},
 				{
 					"type": "button",
 					"text": {
 						"type": "plain_text",
-						"text": "option 2",
+						"text": "Click Me2",
 						"emoji": true
 					},
-					"action_id": "button2",
-					"value": "click_me_2"
-				}
-			]
-		},
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "option 3",
-						"emoji": true
-					},
-					"value": "click_me_3"
+					"value": "click_me_2",
+					"action_id": "click2"
 				}
 			]
 		}
@@ -90,6 +66,7 @@ def message(payload):
     channel_id = event.get("channel")
     user_id = event.get("user")
     text = event.get("text")
+    updated_text = event.get("message",{}).get("text",'')
 
     try:
         if text:
@@ -105,6 +82,10 @@ def message(payload):
             # reply with interactive message select from drop down external
             if text.lower() == "ibi":
                 return slack_web_client.chat_postMessage(channel=channel_id, blocks=blocks)
+        elif updated_text:
+            # response to button selection
+            if updated_text.lower() == "click_me_1":
+                return slack_web_client.chat_postMessage(channel=channel_id, text='hi')
 
     except SlackApiError as e:
         print(e)
@@ -114,21 +95,24 @@ def message(payload):
 def options_load_endpoint():
     # Parse the request payload
     payload = json.loads(request.form["payload"])
-    print(payload)
-    menu_options = {
-        "options": [
-            {
-                "text": "Chess",
-                "value": "chess"
-            },
-            {
-                "text": "Global Thermonuclear War",
-                "value": "war"
-            }
-        ]
-    }
-
-    return Response(json.dumps(menu_options), mimetype='application/json')
+    # print(payload)
+    if payload['callback_id'] == 'menu_options_2319':
+        menu_options = {
+            "options": [
+                {
+                    "text": "Chess",
+                    "value": "chess"
+                },
+                {
+                    "text": "Global Thermonuclear War",
+                    "value": "war"
+                }
+            ]
+        }
+        return Response(json.dumps(menu_options), mimetype='application/json')
+    else:
+        menu_options = {}
+        return Response(json.dumps(menu_options), mimetype='application/json')
 
 
 @app.route("/slack/interactive-endpoint", methods=["POST"])
@@ -139,9 +123,9 @@ def interactive_endpoint():
     if payload['type'] == 'block_actions':
         if payload['actions'][0]['type'] == 'button':
             value = payload['actions'][0]['value']
-            print(value)
-            response = slack_web_client.chat_update(channel=payload["channel"]["id"], ts=payload['container']["message_ts"],
-                                                    text=value, attachments=[])
+            slack_web_client.chat_update(channel=payload["channel"]["id"], ts=payload['message']['ts'],
+                                                    text=value, attachments=[],blocks=[])
+            return make_response("", 200)
     else:
         # Check to see what the user's selection was and update the message
         selection = payload["actions"][0]["selected_options"][0]["value"]
@@ -150,27 +134,12 @@ def interactive_endpoint():
             message_text = "The only winning move is not to play.\nHow about a nice game of chess?"
         else:
             message_text = ":horse:"
-
-        response = slack_web_client.chat_update(channel=payload["channel"]["id"], ts=payload["message_ts"],
+        slack_web_client.chat_update(channel=payload["channel"]["id"], ts=payload["message_ts"],
                                                 text=message_text, attachments=[])
+        return make_response("", 200)
 
-    return make_response("", 200)
 
 
 # Start the server on port 3000
 if __name__ == "__main__":
     app.run(port=3000)
-ACTIONS = [
-    {
-     'action_id': 'HM/pX',
-     'block_id': '7hNh',
-     'text': {
-         'type': 'plain_text',
-         'text': 'option 1',
-         'emoji': True
-            },
-     'value': 'click_me_1',
-     'type': 'button',
-     'action_ts': '1592832241.363170'
-     }
-]
